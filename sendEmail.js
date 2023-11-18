@@ -14,36 +14,26 @@ INSTRUCTIONS:
 */
 
 //EMAIL CONFIGURATION INFORMATION
+const nodemailer = require("nodemailer");
+const csv = require("csvtojson");
+require("dotenv").config();
+
+const fs = require("fs");
+
+// EMAIL CONFIGURATION INFORMATION
 const EMAIL_USER = "advertisingcarwash@gmail.com";
 const EMAIL_PASS = "eyvv brxn dlvd gded"; //google app password
 const EMAIL_HOST = "smtp.gmail.com";
 const EMAIL_PORT = 587;
 
-//EMAIL CONTENT INFORMATION
+// EMAIL CONTENT INFORMATION
 const emailSubject = "Special Offer: Car Wash!";
 const htmlPath = "./index.html";
 
-// IGNORE BELOW THIS LINE
-//___________________________________________________________________________________________________________________________
-const nodemailer = require("nodemailer");
-const csv = require("csvtojson");
-require("dotenv").config();
-const params = process.argv;
-const csvFile = params[2];
-const fromEmail = process.env.EMAIL_FROM;
-const currentPath = process.cwd();
 const timeoutMs = 1000; // Timeout used for spreading out load
-//customise the email content
-const fs = require("fs");
-if (csvFile) {
-  console.log("CSV File successfully opened", csvFile);
-} else {
-  console.log("CSV File not specified");
-  process.exit(0);
-}
 
 // SMTP server configuration
-var smtpTransport = nodemailer.createTransport({
+const smtpTransport = nodemailer.createTransport({
   host: EMAIL_HOST,
   port: EMAIL_PORT,
   auth: {
@@ -52,10 +42,10 @@ var smtpTransport = nodemailer.createTransport({
   },
 });
 
-const sendEmail = (toEmailId, html, subject, close) =>
+const sendEmail = (toEmailId, html, subject) =>
   new Promise((resolve, reject) => {
     const msg = {
-      from: fromEmail, // sender address
+      from: EMAIL_USER, // sender address
       to: toEmailId, // to address,
       subject, // Subject line
       html, // html body
@@ -65,18 +55,11 @@ const sendEmail = (toEmailId, html, subject, close) =>
       if (err) {
         return reject(err);
       }
-      if (close) {
-        msg.transport.close();
-      }
       setTimeout(resolve, timeoutMs); // a small timeout so that your SMTP server doesn't block you
     });
   });
 
-const csvFilePath = currentPath + "/" + csvFile;
-
-console.log("csvFilePath", csvFilePath);
-
-function getEmailContent() {
+const getEmailContent = () => {
   try {
     const htmlContent = fs.readFileSync(htmlPath, "utf8");
     return htmlContent;
@@ -84,9 +67,7 @@ function getEmailContent() {
     console.error(error);
     return null;
   }
-}
-
-// ...
+};
 
 const getMsgParams = () => {
   const subject = emailSubject;
@@ -94,26 +75,35 @@ const getMsgParams = () => {
   return [subject, htmlBody];
 };
 
-function sendBulkEmail() {
-  csv()
-    .fromFile(csvFilePath)
-    .then((jsonObj) => {
-      jsonObj.map(async (it) => {
-        const { firstName, lastName, email } = it;
-        const name = `${firstName} ${lastName}`;
-        const [subject, htmlBody] = getMsgParams(name);
+const sendBulkEmail = async () => {
+  const csvFilePath = process.argv[2];
+  if (!csvFilePath) {
+    console.log("CSV File not specified");
+    process.exit(0);
+  }
 
-        console.log(`Sending to: ${email}`);
-        try {
-          await sendEmail(email, htmlBody, subject);
-          console.log("Sent to: ", email);
-        } catch (e) {
-          console.error(`Sending to "${name},${email}" failed`);
-          console.log("error", e);
-        }
-      });
-    });
-}
+  console.log("CSV File successfully opened", csvFilePath);
+
+  try {
+    const jsonObj = await csv().fromFile(csvFilePath);
+    for (const it of jsonObj) {
+      const { firstName, lastName, email } = it;
+      const name = `${firstName} ${lastName}`;
+      const [subject, htmlBody] = getMsgParams(name);
+
+      console.log(`Sending to: ${email}`);
+      try {
+        await sendEmail(email, htmlBody, subject);
+        console.log("Sent to: ", email);
+      } catch (e) {
+        console.error(`Sending to "${name},${email}" failed`);
+        console.log("error", e);
+      }
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
 
 // verify connection configuration
 smtpTransport.verify((error) => {
