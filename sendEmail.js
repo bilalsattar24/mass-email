@@ -14,15 +14,14 @@ INSTRUCTIONS:
 */
 
 //EMAIL CONFIGURATION INFORMATION
-const EMAIL_USER = "enter your gmail address";
-const EMAIL_PASS = "enter the app password you created";
+const EMAIL_USER = "advertisingcarwash@gmail.com";
+const EMAIL_PASS = "eyvv brxn dlvd gded"; //google app password
 const EMAIL_HOST = "smtp.gmail.com";
 const EMAIL_PORT = 587;
 
 //EMAIL CONTENT INFORMATION
-const emailContentText = "This is the email content";
-const emailImageUrl = "https://picsum.photos/id/1/200/300";
-const emailSubject = "Email subject";
+const emailSubject = "Special Offer: Car Wash!";
+const htmlPath = "./index.html";
 
 // IGNORE BELOW THIS LINE
 //___________________________________________________________________________________________________________________________
@@ -34,6 +33,8 @@ const csvFile = params[2];
 const fromEmail = process.env.EMAIL_FROM;
 const currentPath = process.cwd();
 const timeoutMs = 1000; // Timeout used for spreading out load
+//customise the email content
+const fs = require("fs");
 if (csvFile) {
   console.log("CSV File successfully opened", csvFile);
 } else {
@@ -77,7 +78,7 @@ console.log("csvFilePath", csvFilePath);
 
 function getEmailContent() {
   try {
-    const htmlContent = fs.readFileSync("./emailContent.html", "utf8");
+    const htmlContent = fs.readFileSync(htmlPath, "utf8");
     return htmlContent;
   } catch (error) {
     console.error(error);
@@ -85,15 +86,11 @@ function getEmailContent() {
   }
 }
 
-//customise the email content
-const getMsgParams = (name) => {
+// ...
+
+const getMsgParams = () => {
   const subject = emailSubject;
-  const htmlBody = `<h1>Hello ${name}</h2> ${
-    emailImageUrl
-      ? `<p>${emailContentText}</p>
-      <img src="${emailImageUrl}" />`
-      : `<p>${emailContentText}</p>`
-  }`;
+  const htmlBody = getEmailContent();
   return [subject, htmlBody];
 };
 

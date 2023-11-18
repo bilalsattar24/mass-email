@@ -10,7 +10,7 @@
     "nodemailer": "^6.4.10"
   },
   "scripts": {
-    "sendemail": "node sendEmail mailinglist.csv"
+    "sendemail": "node sendEmail testList.csv"
   },
   "author": "Bilal"
 }
